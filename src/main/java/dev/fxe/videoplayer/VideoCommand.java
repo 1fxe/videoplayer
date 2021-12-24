@@ -3,8 +3,11 @@ package dev.fxe.videoplayer;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
+import org.jcodec.api.JCodecException;
+import scala.actors.threadpool.Executors;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Locale;
 
 public class VideoCommand extends CommandBase {
@@ -38,8 +41,15 @@ public class VideoCommand extends CommandBase {
 			String file = args[1].toLowerCase(Locale.ROOT);
 			if (arg.equals("load")) {
 				VideoPlayer.video.delete(); // free up resources
-//				VideoPlayer.video = new Video(new File("/home/f1fxe/Downloads/coloured-redstone/" + file));
-//				VideoPlayer.video.load();
+				// ok
+				new Thread(() -> {
+					try {
+						VideoPlayer.video = new Video(new File("/home/f1fxe/Downloads/videoplayer/" + file));
+					} catch (IOException | JCodecException e) {
+						e.printStackTrace();
+					}
+				}).start();
+
 			}
 		}
 	}

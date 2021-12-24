@@ -23,7 +23,7 @@ public class VideoPlayer {
 
 	static {
 		try {
-			VideoPlayer.video = new Video(new File("/home/f1fxe/Downloads/coloured-redstone/sample.mp4"));
+			VideoPlayer.video = new Video(new File("/home/f1fxe/Downloads/videoplayer/sample.mp4"));
 		} catch (IOException | JCodecException e) {
 			e.printStackTrace();
 		}

@@ -1,6 +1,8 @@
 package dev.fxe.videoplayer;
 
 import com.google.common.primitives.Bytes;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.ChatComponentText;
 import org.jcodec.api.FrameGrab;
 import org.jcodec.api.JCodecException;
 import org.jcodec.common.DemuxerTrack;
@@ -26,14 +28,13 @@ public class Video {
 	private final HashMap<BufferedImage, byte[]> pixelCache = new HashMap<>();
 	public double frameRate;
 	public int width, height, frameCount;
+	public int textureId;
 
 	private final int[] pbo = new int[2];
-	public int textureId;
-	private ByteBuffer buffer;
-
-	static int index = 0;
+	private int index;
 
 	public Video(File file) throws IOException, JCodecException {
+		this.index = 0;
 		FrameGrab grab = FrameGrab.createFrameGrab(NIOUtils.readableChannel(file));
 		DemuxerTrack vt = grab.getVideoTrack();
 		this.frameCount = vt.getMeta().getTotalFrames();
@@ -61,8 +62,7 @@ public class Video {
 			this.pixelCache.put(image, Bytes.toArray(bytes));
 		}
 
-		this.buffer = BufferUtils.createByteBuffer(this.width * this.height * 4);
-		this.load();
+		Minecraft.getMinecraft().addScheduledTask(this::load);
 	}
 
 	public void delete() {
@@ -70,7 +70,7 @@ public class Video {
 		GL11.glDeleteTextures(this.textureId);
 	}
 
-	public void load() {
+	private void load() {
 		// Generate texure
 		this.textureId = GL11.glGenTextures();
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
@@ -93,26 +93,31 @@ public class Video {
 
 		this.pbo[0] = pbo1;
 		this.pbo[1] = pbo2;
+
+		if (Minecraft.getMinecraft().thePlayer != null && Minecraft.getMinecraft().theWorld != null) {
+			Minecraft.getMinecraft().thePlayer.addChatComponentMessage(new ChatComponentText("Uploaded to opengl"));
+			VideoPlayer.running = true;
+		}
 	}
 
 	public void update(int frame) {
 		int size = this.width * this.height * 4;
 		int nextIndex;
 
-		Video.index = (Video.index + 1) % 2;
-		nextIndex = (Video.index + 1) % 2;
+		this.index = (this.index + 1) % 2;
+		nextIndex = (this.index + 1) % 2;
 
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
-		GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.pbo[Video.index]);
+		GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.pbo[this.index]);
 		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, this.width, this.height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0);
 
 		GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, this.pbo[nextIndex]);
 		GL15.glBufferData(GL21.GL_PIXEL_UNPACK_BUFFER, size, GL15.GL_STREAM_DRAW);
 
-		this.buffer = GL15.glMapBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, GL15.GL_WRITE_ONLY, this.buffer);
+		ByteBuffer buffer = GL15.glMapBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, GL15.GL_WRITE_ONLY, null);
 
-		if (this.buffer != null) {
-			this.updatePixels(frame);
+		if (buffer != null) {
+			this.updatePixels(buffer, frame);
 			GL15.glUnmapBuffer(GL21.GL_PIXEL_UNPACK_BUFFER);
 		}
 
@@ -120,12 +125,11 @@ public class Video {
 		GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
-	private void updatePixels(int frame) {
-
+	private void updatePixels(ByteBuffer buffer, int frame) {
 		BufferedImage image = this.images.get(frame);
 		byte[] pixels = this.pixelCache.get(image);
-		this.buffer.clear();
-		this.buffer.put(pixels);
-		this.buffer.flip();
+		buffer.clear();
+		buffer.put(pixels);
+		buffer.flip();
 	}
 }
