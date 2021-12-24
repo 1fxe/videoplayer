@@ -9,7 +9,6 @@ import org.jcodec.common.DemuxerTrack;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.model.Picture;
 import org.jcodec.scale.AWTUtil;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
@@ -68,6 +67,8 @@ public class Video {
 	public void delete() {
 		VideoPlayer.running = false;
 		GL11.glDeleteTextures(this.textureId);
+		GL15.glDeleteBuffers(this.pbo[0]);
+		GL15.glDeleteBuffers(this.pbo[1]);
 	}
 
 	private void load() {
