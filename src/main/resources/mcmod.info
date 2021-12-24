@@ -1,0 +1,16 @@
+[
+{
+  "modid": "coloured-redstone",
+  "name": "Coloured Redstone",
+  "description": "Changes color of redstone",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["1fxe"],
+  "credits": "The Forge and FML guys, for making this example",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
